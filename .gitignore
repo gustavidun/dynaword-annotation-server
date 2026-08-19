@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environments
+.venv/
+venv/
+ENV/
+env/
+pyrefly.toml
+pyrightconfig.json
+
+# Databases & local state
+*.db
+*.sqlite3
+state.db
+
+# IDE & OS specific
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+dynaword
+staging-dynaword

@@ -1,0 +1,5 @@
+interval_minutes: 5
+hf_repo_id: "gustavidun/staging-dynaword"
+db_path: "state.db"
+parquet_pattern: "data/*/data.parquet"
+model: "mradermacher/propella-1-4b-GGUF"
