@@ -25,7 +25,7 @@ On every tick, the server:
 
 4. **Run the server** (using a different port than the inference server):
    ```bash
-   uvicorn src.main:app --reload --port 8080
+   uvicorn src.app:app --reload --port 8080
    ```
 
 ## Output
