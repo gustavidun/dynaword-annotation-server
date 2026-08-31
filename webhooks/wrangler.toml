@@ -1,3 +1,7 @@
 name = "dynaword-annotation-server"
 main = "src/index.js"
 compatibility_date = "2023-12-01"
+
+[observability.logs]
+enabled = false
+invocation_logs = true
