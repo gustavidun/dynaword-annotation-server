@@ -2,6 +2,11 @@ name = "dynaword-annotation-server"
 main = "src/index.js"
 compatibility_date = "2023-12-01"
 
+[[d1_databases]]
+binding = "dynaword_webhooks"
+database_name = "dynaword-webhooks"
+database_id = "4d5d93ed-41cc-4cb9-85dc-99be0da5d270"
+
 [observability]
 enabled = false
 head_sampling_rate = 1
