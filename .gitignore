@@ -42,3 +42,7 @@ state.db
 
 dynaword
 staging-dynaword
+
+# Node & Cloudflare Worker
+node_modules/
+.wrangler/
