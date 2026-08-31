@@ -1,7 +1,12 @@
 import sqlite3
+import json
 from datetime import datetime, timezone
 from dataclasses import dataclass
 from src.config import DB_PATH
+
+import requests
+from typing import Any
+from src.config import WEBHOOK_URL, WEBHOOK_SECRET
 
 @dataclass
 class Command:
@@ -10,18 +15,12 @@ class Command:
     repo_id: str
     discussion_num: int
 
-
-def get_last_sha(repo_id: str) -> str | None:
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("CREATE TABLE IF NOT EXISTS repo_state (repo_id TEXT PRIMARY KEY, sha TEXT)")
-        row = conn.execute("SELECT sha FROM repo_state WHERE repo_id = ?", (repo_id,)).fetchone()
-        return row[0] if row else None
-
-
-def save_last_sha(repo_id: str, sha: str):
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("CREATE TABLE IF NOT EXISTS repo_state (repo_id TEXT PRIMARY KEY, sha TEXT)")
-        conn.execute("INSERT OR REPLACE INTO repo_state VALUES (?, ?)", (repo_id, sha))
+@dataclass
+class Webhook:
+    id: int
+    payload: dict[str, Any]
+    created_at: datetime
+    status: str
 
 def log_command(command_name: str, repo_id: str, discussion_num: int):
     with sqlite3.connect(DB_PATH) as conn:
@@ -61,3 +60,37 @@ def get_commands(repo_id: str, threshold: datetime | None = None) -> list[Comman
             for row in rows
         ]
 
+def get_pending_webhooks() -> list[Webhook]:
+    """Polls the Cloudflare Worker for up to 50 pending webhooks."""
+    try:
+        response = requests.get(WEBHOOK_URL, headers={"X-Webhook-Secret": WEBHOOK_SECRET})
+        if response.status_code == 200:
+            data = response.json()
+            return [
+                Webhook(
+                    id=row["id"],
+                    payload=json.loads(row["payload"]),
+                    created_at=datetime.fromisoformat(row["created_at"].replace("Z", "+00:00")),
+                    status=row["status"]
+                )
+                for row in data
+            ]
+        else:
+            print(f"Failed to fetch webhooks: {response.status_code}")
+    except Exception as e:
+        print(f"Error connecting to worker: {e}")
+        
+    return []
+
+def mark_webhooks_completed(ids: list[int]) -> bool:
+    """Marks a list of webhook payload IDs as completed"""        
+    try:
+        response = requests.patch(
+            WEBHOOK_URL, 
+            headers={"X-Webhook-Secret": WEBHOOK_SECRET},
+            json={"ids": ids}
+        )
+        return response.status_code == 200
+    except Exception as e:
+        print(f"Error updating webhooks: {e}")
+        return False

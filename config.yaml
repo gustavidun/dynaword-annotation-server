@@ -1,6 +1,7 @@
-interval_minutes: 5
+interval_minutes: 1
 hf_repo_id: "gustavidun/staging-dynaword"
 db_path: "state.db"
 parquet_pattern: "data/*/data.parquet"
 model: "mradermacher/propella-1-4b-GGUF"
 name: "gustavidun"
+webhook_url: "https://dynaword-annotation-server.gustavidunsloth.workers.dev"

@@ -3,28 +3,29 @@ from datetime import datetime, timezone
 from huggingface_hub import Discussion
 
 from src.annotate import annotate_dataset
-from src.db import log_command, get_commands
+from src.db import log_command, Webhook 
 from src.hf_api import (
-    get_discussion_comments, get_discussions, add_comment,
+    get_discussion, add_comment,
     update_comment, upload_to_pr, get_datasets
 )
 from src.config import NAME
 from src.util import get_dataset_path
 
-def find_and_run_commands():
-    discussions = get_discussions()
-    for discussion in discussions:
+def parse_and_run_commands(webhooks : list[Webhook]):
+    for webhook in webhooks:
         # fetch only comments after the most recent executed command
-        commands = get_commands(discussion.repo_id)
-        threshold = max(cmd.timestamp for cmd in commands) if commands else None
-        comments = get_discussion_comments(discussion, threshold)
-        
-        if not comments:
+        if webhook.payload["action"] != "create":
+
             continue
-        for comment in comments:
-            words = comment.split()
-            if words and words[0] == "@" + NAME:
-                run_command(comment, discussion)
+
+        comment = webhook.payload["comment"]["content"]
+        words = comment.split()
+        if words and words[0] == "@" + NAME:
+            discussion = get_discussion(
+                webhook.payload["repository"]["full_name"],
+                webhook.payload["discussion"]["number"]
+            )
+            run_command(comment, discussion)
 
 def run_command(command: str, discussion: Discussion):
     args = command.lower().split()

@@ -7,6 +7,9 @@ binding = "dynaword_webhooks"
 database_name = "dynaword-webhooks"
 database_id = "4d5d93ed-41cc-4cb9-85dc-99be0da5d270"
 
+[triggers]
+crons = ["0 0 * * *"] # Run every day at midnight UTC
+
 [observability]
 enabled = false
 head_sampling_rate = 1

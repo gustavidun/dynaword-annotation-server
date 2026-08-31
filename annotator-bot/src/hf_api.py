@@ -61,20 +61,6 @@ def upload_to_pr(local_path: str, remote_path: str, pr_num: int, commit_message:
         revision=f"refs/pr/{pr_num}"
     )
 
-
-def get_discussion_comments(discussion: Discussion, threshold: datetime | None = None) -> list[str]:
-    """Return comments in a discussion that were created after the given threshold."""
-    details = api.get_discussion_details(
-        repo_id=discussion.repo_id,
-        repo_type="dataset",
-        discussion_num=discussion.num
-    )
-    
-    return [
-        e.content for e in details.events
-        if isinstance(e, DiscussionComment) and (threshold is None or e.created_at > threshold)
-    ]
-
 def get_discussions(threshold: datetime | None = None, repo: str = HF_REPO_ID) -> list[Discussion]:
     """Return discussions that were created after the given threshold."""
     discussions = api.get_repo_discussions(
@@ -84,8 +70,16 @@ def get_discussions(threshold: datetime | None = None, repo: str = HF_REPO_ID) -
     
     return [d for d in discussions if threshold is None or d.created_at > threshold]
 
+def get_discussion(repo_id: str, discussion_num: int) -> Discussion:
+    """Return details for a specific discussion."""
+    return api.get_discussion_details(
+        repo_id=repo_id,
+        repo_type="dataset",
+        discussion_num=discussion_num
+    )
 
-def add_comment(discussion: Discussion, comment: str) -> DiscussionComment:
+
+def add_comment(discussion : Discussion, comment: str) -> DiscussionComment:
     """Add a comment to a discussion."""
     return api.comment_discussion(
         repo_id=discussion.repo_id,
@@ -94,7 +88,7 @@ def add_comment(discussion: Discussion, comment: str) -> DiscussionComment:
         comment=comment
     )
 
-def update_comment(discussion: Discussion, comment_id: str, new_content: str) -> DiscussionComment:
+def update_comment(discussion : Discussion, comment_id: str, new_content: str) -> DiscussionComment:
     """Edit an existing comment in a discussion."""
     return api.edit_discussion_comment(
         repo_id=discussion.repo_id,

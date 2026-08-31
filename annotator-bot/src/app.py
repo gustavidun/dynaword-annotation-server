@@ -5,17 +5,17 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from pathlib import Path
 
 from src.config import HF_REPO_ID, INTERVAL_MINUTES
-from src.hf_api import get_unannotated_datasets, create_pr, get_discussions, get_discussion_comments
+from src.hf_api import get_unannotated_datasets, create_pr
 from src.annotate import annotate_dataset
-from src.commands import find_and_run_commands
-
+from src.db import get_pending_webhooks, mark_webhooks_completed
+from src.commands import parse_and_run_commands
 
 scheduler = AsyncIOScheduler()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     scheduler.add_job(
-        commands,
+        fetch_webhooks,
         trigger="interval",
         minutes=INTERVAL_MINUTES,
         id="nth_minute_job",
@@ -43,9 +43,13 @@ async def root():
         "interval_minutes": INTERVAL_MINUTES
     }
 
-@app.get("/commands")
-async def commands():
-    find_and_run_commands() 
+@app.get("/fetch_webhooks")
+async def fetch_webhooks():
+    """Fetch pending webhooks from D1 and run any commands found."""
+    webhooks = get_pending_webhooks()
+    if webhooks:
+        parse_and_run_commands(webhooks)
+        mark_webhooks_completed([w.id for w in webhooks])
     return {"status": "Ran commands."}
 
 @app.get("/annotate_new_datasets")
