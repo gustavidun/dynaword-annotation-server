@@ -62,6 +62,7 @@ def get_commands(repo_id: str, threshold: datetime | None = None) -> list[Comman
 
 def get_pending_webhooks() -> list[Webhook]:
     """Polls the Cloudflare Worker for up to 50 pending webhooks."""
+    print(WEBHOOK_SECRET, WEBHOOK_URL)
     try:
         response = requests.get(WEBHOOK_URL, headers={"X-Webhook-Secret": WEBHOOK_SECRET})
         if response.status_code == 200:
@@ -83,7 +84,7 @@ def get_pending_webhooks() -> list[Webhook]:
     return []
 
 def mark_webhooks_completed(ids: list[int]) -> bool:
-    """Marks a list of webhook payload IDs as completed"""        
+    """Marks a list of webhook payload IDs as processed (completed)"""        
     try:
         response = requests.patch(
             WEBHOOK_URL, 

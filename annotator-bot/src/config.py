@@ -1,7 +1,7 @@
 from pathlib import Path
 import yaml
 
-ROOT = Path(__file__).parents[1]
+ROOT = Path(__file__).parents[2]
 CONFIG_PATH = ROOT / "config.yaml"
 
 with open(CONFIG_PATH, "r", encoding="utf-8") as f:
@@ -17,7 +17,7 @@ import os
 from dotenv import load_dotenv
 
 # Load the .env file from the root directory (one level up from annotator-bot)
-load_dotenv(ROOT.parent / ".env")
+load_dotenv(ROOT / ".env")
 
 WEBHOOK_URL: str = _cfg.get("webhook_url", "https://dynaword-annotation-server.gustavidunsloth.workers.dev")
 WEBHOOK_SECRET: str = os.environ.get("WEBHOOK_SECRET", "")

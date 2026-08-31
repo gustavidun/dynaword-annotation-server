@@ -1,5 +1,3 @@
-from datetime import datetime, timezone
-
 from huggingface_hub import Discussion
 
 from src.annotate import annotate_dataset
@@ -13,17 +11,20 @@ from src.util import get_dataset_path
 
 def parse_and_run_commands(webhooks : list[Webhook]):
     for webhook in webhooks:
-        # fetch only comments after the most recent executed command
-        if webhook.payload["action"] != "create":
-
+        if webhook.status == "completed":
+            continue
+        
+        if webhook.payload["event"]["action"] != "create" or webhook.payload["event"]["scope"] != "discussion.comment":
             continue
 
-        comment = webhook.payload["comment"]["content"]
+        comment = webhook.payload["comment"].get("content", "")
+        if comment == "":
+            continue
         words = comment.split()
         if words and words[0] == "@" + NAME:
             discussion = get_discussion(
-                webhook.payload["repository"]["full_name"],
-                webhook.payload["discussion"]["number"]
+                webhook.payload["repo"]["name"],
+                webhook.payload["discussion"]["num"]
             )
             run_command(comment, discussion)
 
