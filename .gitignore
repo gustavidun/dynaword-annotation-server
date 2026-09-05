@@ -42,6 +42,7 @@ state.db
 
 dynaword
 staging-dynaword
+repos/
 
 # Node & Cloudflare Worker
 node_modules/
