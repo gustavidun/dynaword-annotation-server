@@ -25,13 +25,16 @@ def init_repos():
     
 def checkout_pr(repo_id: str, pr_num: int):
     repo_dir = repo_dirs[repo_id]
-    subprocess.run(["git", "fetch", "origin", f"refs/pr/{pr_num}:pr/{pr_num}"], check=True, cwd=repo_dir)
-    subprocess.run(["git", "checkout", f"pr/{pr_num}"], check=True, cwd=repo_dir)
+    subprocess.run(["git", "checkout", "-f", "main"], check=True, cwd=repo_dir) # git throws an error if we fetch from branch we are standing on
+    subprocess.run(["git", "fetch", "origin", f"+refs/pr/{pr_num}:pr/{pr_num}"], check=True, cwd=repo_dir)
+    subprocess.run(["git", "checkout", "-f", f"pr/{pr_num}"], check=True, cwd=repo_dir)
 
 def run_test(repo_id: str):
     repo_dir = repo_dirs[repo_id]
+    cmd = ". .venv/bin/activate && set -o pipefail; uv run pytest src/tests/ | tee test_results.log" # run tests manually with pipefail so we still capture exit errors
+    
     try:
-        subprocess.run(["bash", "-c", ". .venv/bin/activate && make test"], check=True, cwd=repo_dir)
+        subprocess.run(["bash", "-c", cmd], check=True, cwd=repo_dir)
         print("All tests passed!")
         return repo_dir / "test_results.log"
     except subprocess.CalledProcessError as e:

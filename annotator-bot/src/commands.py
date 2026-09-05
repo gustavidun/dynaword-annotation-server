@@ -8,7 +8,7 @@ from src.hf_api import (
 )
 from src.config import NAME
 from src.util import get_dataset_path
-from src.repos import run_test, run_update_descriptive_statistics, checkout_pr, repo_dirs
+from src.repos import run_test, checkout_pr, repo_dirs
 
 def parse_and_run_commands(webhooks : list[Webhook]):
     for webhook in webhooks:
@@ -62,31 +62,64 @@ def add_annotations(discussion : Discussion, *args):
             add_comment(discussion, f"Annotation failed. Dataset '{dataset_name}' not found in this PR.")
             return
 
-        status_comment = add_comment(discussion, f"⏳ Starting annotation for `{dataset_name}`...")
-        checkout_pr(discussion.repo_id, discussion.num)
-        
-        dest = annotate_dataset(
-            discussion.repo_id,
-            get_dataset_path(dataset_name), 
-            repo_dirs[discussion.repo_id] / "data" / dataset_name, 
-            revision=f"refs/pr/{discussion.num}"
-        )
+        status_comment_msg = f"**INFO**: Starting annotation for `{dataset_name}`..."
+        status_comment = add_comment(discussion, status_comment_msg)
 
-        run_test(discussion.repo_id)
-
-        upload_to_pr(
-            discussion.repo_id,
-            local_path=str(dest),
-            remote_path=f"data/{dataset_name}/metadata.parquet",
-            pr_num=discussion.num,
-            commit_message=f"Add annotations for {dataset_name}"
-        )
-        update_comment(discussion, status_comment.id, f"Finished annotating `{dataset_name}` and created a commit.")
+        try:
+            checkout_pr(discussion.repo_id, discussion.num)
+        except Exception as e:
+            status_comment_msg += f"\n \n **ERROR**: Failed to checkout PR. Error message: `{e}`."
+            update_comment(discussion, status_comment.id, status_comment_msg)
+            return
         
+        try:
+            dest = annotate_dataset(
+                discussion.repo_id,
+                get_dataset_path(dataset_name), 
+                repo_dirs[discussion.repo_id] / "data" / dataset_name, 
+                revision=f"refs/pr/{discussion.num}",
+                dataset_name=dataset_name
+            )
+            status_comment_msg += "\n \n **INFO**: Annotation completed." 
+            update_comment(discussion,status_comment.id,status_comment_msg)
+        except Exception as e:
+            status_comment_msg += "\n \n **ERROR**: Annotation failed." 
+            update_comment(discussion,status_comment.id,status_comment_msg)
+            return
+
+        try:
+            run_test(discussion.repo_id)
+            status_comment_msg += "\n \n **INFO**: Tests passed."
+            update_comment(discussion,status_comment.id,status_comment_msg)
+        except Exception as e:
+            status_comment_msg += "\n \n **ERROR**: Tests failed. See test_results.log for more information. You may need to fix the issue manually." 
+            update_comment(discussion,status_comment.id,status_comment_msg)
+        try:
+            upload_to_pr(
+                discussion.repo_id,
+                local_path=str(dest),
+                remote_path=f"data/{dataset_name}/metadata.parquet",
+                pr_num=discussion.num,
+                commit_message=f"Add annotations for {dataset_name}"
+            )
+            upload_to_pr(
+                discussion.repo_id,
+                local_path=str(repo_dirs[discussion.repo_id] / "test_results.log"),
+                remote_path="test_results.log",
+                pr_num=discussion.num,
+                commit_message=f"Add test results for {dataset_name}"
+            )
+            status_comment_msg += f"\n \n **SUCCESS**: Uploaded annotations and test results for `{dataset_name}`."
+            update_comment(discussion, status_comment.id, status_comment_msg)
+        except Exception as e:
+            status_comment_msg += f"\n \n **ERROR**: Failed to upload annotations / test results. Error message: `{e}`."
+            update_comment(discussion, status_comment.id, status_comment_msg)
+            return
+   
     except Exception as err:
         print(f"Annotation failed: {err}")
         if 'status_comment' in locals(): # if status_comment was created before the Exception happened, update it
-            update_comment(discussion, status_comment.id, f"Annotation failed: {err}")
+            update_comment(discussion, status_comment.id, f"\n \n **ERROR**: Annotation failed. Error message: `{err}`")
     
 COMMANDS = {
     "annotate": add_annotations,
