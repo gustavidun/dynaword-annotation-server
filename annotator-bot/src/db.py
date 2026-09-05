@@ -1,6 +1,6 @@
 import sqlite3
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from dataclasses import dataclass
 from src.config import DB_PATH
 
@@ -9,56 +9,11 @@ from typing import Any
 from src.config import WEBHOOK_URL, WEBHOOK_SECRET
 
 @dataclass
-class Command:
-    timestamp: datetime
-    command_name: str
-    repo_id: str
-    discussion_num: int
-
-@dataclass
 class Webhook:
     id: int
     payload: dict[str, Any]
     created_at: datetime
     status: str
-
-def log_command(command_name: str, repo_id: str, discussion_num: int):
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS commands "
-            "(timestamp TEXT, command_name TEXT, repo_id TEXT, discussion_num INTEGER)"
-        )
-        conn.execute(
-            "INSERT INTO commands (timestamp, command_name, repo_id, discussion_num) VALUES (?, ?, ?, ?)",
-            (datetime.now(timezone.utc).isoformat(), command_name, repo_id, discussion_num)
-        )
-
-def get_commands(repo_id: str, threshold: datetime | None = None) -> list[Command]:
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.row_factory = sqlite3.Row
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS commands "
-            "(timestamp TEXT, command_name TEXT, repo_id TEXT, discussion_num INTEGER)"
-        )
-        if threshold:
-            rows = conn.execute(
-                "SELECT * FROM commands WHERE repo_id = ? AND timestamp > ?",
-                (repo_id, threshold.isoformat())
-            ).fetchall()
-        else:
-            rows = conn.execute(
-                "SELECT * FROM commands WHERE repo_id = ?",
-                (repo_id,)
-            ).fetchall()
-        return [
-            Command(
-                timestamp=datetime.fromisoformat(row["timestamp"]).replace(tzinfo=timezone.utc),
-                command_name=row["command_name"],
-                repo_id=row["repo_id"],
-                discussion_num=row["discussion_num"]
-            )
-            for row in rows
-        ]
 
 def get_pending_webhooks() -> list[Webhook]:
     """Polls the Cloudflare Worker for up to 50 pending webhooks."""

@@ -1,13 +1,14 @@
 from huggingface_hub import Discussion
 
 from src.annotate import annotate_dataset
-from src.db import log_command, Webhook 
+from src.db import Webhook 
 from src.hf_api import (
     get_discussion, add_comment,
     update_comment, upload_to_pr, get_datasets
 )
 from src.config import NAME
 from src.util import get_dataset_path
+from src.repos import run_test, run_update_descriptive_statistics, checkout_pr, repo_dirs
 
 def parse_and_run_commands(webhooks : list[Webhook]):
     for webhook in webhooks:
@@ -39,11 +40,6 @@ def run_command(command: str, discussion: Discussion):
     else:
         add_comment(discussion, f"Unknown command: `{cmd_name}`")
         print(f"Unknown command: {cmd_name}")
-    log_command(
-        cmd_name,
-        discussion.repo_id,
-        discussion.num
-    )
 
 def add_annotations(discussion : Discussion, *args):
     if not discussion.is_pull_request:
@@ -61,18 +57,25 @@ def add_annotations(discussion : Discussion, *args):
     try:
         dataset_name = args[0]
         
-        pr_datasets = get_datasets(f"refs/pr/{discussion.num}")
+        pr_datasets = get_datasets(discussion.repo_id, f"refs/pr/{discussion.num}")
         if dataset_name not in pr_datasets:
             add_comment(discussion, f"Annotation failed. Dataset '{dataset_name}' not found in this PR.")
             return
 
         status_comment = add_comment(discussion, f"⏳ Starting annotation for `{dataset_name}`...")
+        checkout_pr(discussion.repo_id, discussion.num)
+        
         dest = annotate_dataset(
+            discussion.repo_id,
             get_dataset_path(dataset_name), 
-            dataset_name, 
+            repo_dirs[discussion.repo_id] / "data" / dataset_name, 
             revision=f"refs/pr/{discussion.num}"
         )
+
+        run_test(discussion.repo_id)
+
         upload_to_pr(
+            discussion.repo_id,
             local_path=str(dest),
             remote_path=f"data/{dataset_name}/metadata.parquet",
             pr_num=discussion.num,
@@ -82,7 +85,7 @@ def add_annotations(discussion : Discussion, *args):
         
     except Exception as err:
         print(f"Annotation failed: {err}")
-        if 'status_comment' in locals(): # if status_comment exists in locals, update it
+        if 'status_comment' in locals(): # if status_comment was created before the Exception happened, update it
             update_comment(discussion, status_comment.id, f"Annotation failed: {err}")
     
 COMMANDS = {
