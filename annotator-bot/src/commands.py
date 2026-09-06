@@ -8,7 +8,7 @@ from src.hf_api import (
 )
 from src.config import NAME
 from src.util import get_dataset_path
-from src.repos import run_test, checkout_pr, repo_dirs
+from src.repos import run_test, checkout_pr, repo_dirs, run_update_descriptive_statistics
 
 def parse_and_run_commands(webhooks : list[Webhook]):
     for webhook in webhooks:
@@ -94,18 +94,31 @@ def add_annotations(discussion : Discussion, *args):
         except Exception as e:
             status_comment_msg += "\n \n **ERROR**: Tests failed. See test_results.log for more information. You may need to fix the issue manually." 
             update_comment(discussion,status_comment.id,status_comment_msg)
+
+        try:
+            stats_files = run_update_descriptive_statistics(discussion.repo_id, [dataset_name])
+            status_comment_msg += "\n \n **INFO**: Descriptive statistics updated."
+            update_comment(discussion,status_comment.id,status_comment_msg)
+            upload_to_pr(
+                discussion.repo_id,
+                local_path=[str(f) for f in stats_files],
+                pr_num=discussion.num,
+                commit_message=f"Add descriptive statistics for {dataset_name}"
+            )
+        except Exception as e:
+            status_comment_msg += f"\n \n **ERROR**: Failed to update descriptive statistics. You may need to update them manually. Error: {e}"
+            update_comment(discussion,status_comment.id,status_comment_msg)
+
         try:
             upload_to_pr(
                 discussion.repo_id,
-                local_path=str(dest),
-                remote_path=f"data/{dataset_name}/metadata.parquet",
+                local_path=[str(dest)],
                 pr_num=discussion.num,
                 commit_message=f"Add annotations for {dataset_name}"
             )
             upload_to_pr(
                 discussion.repo_id,
-                local_path=str(repo_dirs[discussion.repo_id] / "test_results.log"),
-                remote_path="test_results.log",
+                local_path=[str(repo_dirs[discussion.repo_id] / "test_results.log")],
                 pr_num=discussion.num,
                 commit_message=f"Add test results for {dataset_name}"
             )

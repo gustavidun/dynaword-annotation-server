@@ -1,8 +1,6 @@
 import re
 from datetime import datetime, timezone
-from huggingface_hub import HfApi, DiscussionComment, Discussion
-
-from src.config import HF_REPO_IDS
+from huggingface_hub import HfApi, DiscussionComment, Discussion, CommitOperationAdd
 
 api = HfApi()
 
@@ -51,12 +49,17 @@ def create_pr(repo_id: str, local_path: str, remote_path: str, commit_message: s
         create_pr=True
     )    
 
-def upload_to_pr(repo_id: str, local_path: str, remote_path: str, pr_num: int, commit_message: str):
-    api.upload_file(
-        path_or_fileobj=local_path,
-        path_in_repo=remote_path,
+def upload_to_pr(repo_id: str, local_path:list[str], pr_num: int, commit_message: str):
+    api.create_commit(
         repo_id=repo_id,
         repo_type="dataset",
+        operations=[
+            CommitOperationAdd(
+                path_or_fileobj=path, 
+                path_in_repo=path
+            ) 
+            for path in local_path
+        ],
         commit_message=commit_message,
         revision=f"refs/pr/{pr_num}"
     )
