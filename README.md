@@ -1,6 +1,6 @@
 # Dynaword Annotation Server
 
-An automated annotation bot and server for [Dynaword](https://huggingface.co/danish-foundation-models) Hugging Face dataset repositories. It processes dataset annotations using a local LLM inference server (`llama-server`), runs validation tests, updates descriptive statistics and charts, and commits results directly to pull requests.
+An automated annotation bot and server for [Dynaword](https://huggingface.co/danish-foundation-models) Hugging Face dataset repositories.
 
 ---
 
@@ -30,7 +30,7 @@ The system consists of two primary components:
    - Provides authenticated endpoints for the local bot to poll and mark webhooks as completed.
    - Runs a daily cron cleanup for events older than 7 days.
 
-2. **`annotator-bot/` (FastAPI Service)**
+2. **`annotator-bot/` (FastAPI)**
    - Periodically polls the Cloudflare Worker for pending webhook events.
    - Listens for bot commands in PR comments (e.g. `@<name> annotate <dataset>`).
    - Runs annotation, executes tests, updates descriptive statistics, and pushes commits to PR.
