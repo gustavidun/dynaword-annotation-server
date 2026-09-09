@@ -5,4 +5,5 @@ huggingface_hub>=0.20.0
 pyyaml>=6.0
 ../dynaword
 python-dotenv
+uv>=0.12.11
 
