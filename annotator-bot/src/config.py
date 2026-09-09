@@ -4,9 +4,15 @@ import os
 from dotenv import load_dotenv
 
 ROOT = Path(__file__).parents[2]
-CONFIG_PATH = ROOT / "config.yaml"
-
 load_dotenv(ROOT / ".env")
+
+HF_TOKEN = os.environ.get("HF_TOKEN", "")
+
+if HF_TOKEN == "":
+    print("Warning: HF token not configured.")
+
+CONFIG_NAME = os.environ.get("CONFIG_NAME", "config.yaml")
+CONFIG_PATH = ROOT / CONFIG_NAME
 
 with open(CONFIG_PATH, "r", encoding="utf-8") as f:
     _cfg = yaml.safe_load(f) or {}

@@ -8,7 +8,7 @@ from pathlib import Path
 from openai import OpenAI
 from datasets import Dataset
 from huggingface_hub import hf_hub_download
-from src.config import MODEL, ROOT
+from src.config import MODEL, ROOT, HF_TOKEN
 
 def annotate_document(document: str):
     try:
@@ -41,7 +41,7 @@ def annotate_sample(example):
     result = annotate_document(example["text"])
     return result.model_dump()
 
-def annotate_dataset(repo_id: str, remote_path: str, local_path: Path, dataset_name: str, revision: str | None = None) -> Path:
+def annotate_dataset(repo_id: str, remote_path: str, local_path: Path, dataset_name: str, revision: str | None = None, hf_token: str = HF_TOKEN) -> Path:
     print(f"Running annotations on {repo_id} {revision} {remote_path}.")
     dest = local_path / "metadata.parquet"
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -50,7 +50,8 @@ def annotate_dataset(repo_id: str, remote_path: str, local_path: Path, dataset_n
         filename=remote_path,
         repo_type="dataset",
         revision=revision,
-        force_download=True
+        force_download=True,
+        token=hf_token or None,
     )
     
     ds = Dataset.from_parquet(local_parquet)

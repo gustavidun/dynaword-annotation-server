@@ -41,6 +41,9 @@ def run_command(command: str, discussion: Discussion):
         add_comment(discussion, f"Unknown command: `{cmd_name}`")
         print(f"Unknown command: {cmd_name}")
 
+def ping(discussion : Discussion, *args):
+    add_comment(discussion, f"The bot is live and responsive.")
+
 def add_annotations(discussion : Discussion, *args):
     if not discussion.is_pull_request:
         add_comment(discussion, "Annotation failed. Discussion is not a pull request.")
@@ -136,6 +139,7 @@ def add_annotations(discussion : Discussion, *args):
     
 COMMANDS = {
     "annotate": add_annotations,
+    "ping": ping
 }
 
 
