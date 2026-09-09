@@ -1,7 +1,6 @@
 interval_minutes: 1
-hf_repo_ids: ["gustavidun/staging-dynaword"]
-db_path: "state.db"
+hf_repo_ids: ["gustavidun/staging-dynaword", "danish-foundation-models/danish-dynaword"]
 parquet_pattern: "data/*/data.parquet"
-model: "mradermacher/propella-1-4b-GGUF"
-name: "gustavidun"
+model: "ellamind/propella-1-4b"
+name: "dynaword-bot"
 webhook_url: "https://dynaword-annotation-server.gustavidunsloth.workers.dev"

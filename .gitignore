@@ -49,3 +49,4 @@ node_modules/
 .wrangler/
 
 .env
+config.testing.yaml

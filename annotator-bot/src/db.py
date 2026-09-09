@@ -1,8 +1,6 @@
-import sqlite3
 import json
 from datetime import datetime
 from dataclasses import dataclass
-from src.config import DB_PATH
 
 import requests
 from typing import Any
