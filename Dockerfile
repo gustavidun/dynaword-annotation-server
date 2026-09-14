@@ -4,7 +4,7 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 WORKDIR /app
 
 COPY annotator-bot/requirements.txt .
-COPY dynaword /app/dynaword
+COPY dynaword /dynaword
 
 RUN uv pip install --system --no-cache -r requirements.txt
 
