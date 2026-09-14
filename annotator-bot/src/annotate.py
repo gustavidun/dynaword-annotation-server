@@ -12,7 +12,7 @@ from src.config import MODEL, ROOT, HF_TOKEN
 
 def annotate_document(document: str):
     try:
-        client = OpenAI(base_url="http://localhost:8000/v1", api_key="EMPTY")
+        client = OpenAI(base_url="http://sglang:8000/v1", api_key="EMPTY")
     except Exception as err:
         print(f"Can't connect to server: {err}")
         raise err
