@@ -6,14 +6,13 @@ WORKDIR /app
 COPY annotator-bot/requirements.txt .
 COPY dynaword /app/dynaword
 
-WORKDIR /app/annotator-bot
 RUN uv pip install --system --no-cache -r requirements.txt
 
-# Copy the dependencies
 COPY dynaword /app/dynaword
 COPY annotator-bot /app/annotator-bot
 COPY config.yaml /app/config.yaml
 
+WORKDIR /app/annotator-bot
 
 EXPOSE 8080
 
