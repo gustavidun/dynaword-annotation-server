@@ -1,0 +1,28 @@
+services:
+  localhost:
+    image: scitrera/dgx-spark-sglang:latest
+    command: >
+      python -m sglang.launch_server --model-path ellamind/propella-1-4b --host 0.0.0.0 --port 8000 --context-length 65536 --max-running-requests 256 --chunked-prefill-size 8192 --enable-mixed-chunk --num-continuous-decode-steps 8 --grammar-backend llguidance --mem-fraction-static 0.7
+    ports:
+      - "8000:8000"
+    environment:
+      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN:-}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - HF_TOKEN=${HF_TOKEN:-}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET:-}
+    depends_on:
+      - localhost
