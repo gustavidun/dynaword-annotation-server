@@ -1,6 +1,6 @@
 services:
   localhost:
-    image: scitrera/dgx-spark-sglang:latest
+    image: scitrera/dgx-spark-sglang:0.5.17
     command: >
       python -m sglang.launch_server --model-path ellamind/propella-1-4b --host 0.0.0.0 --port 8000 --context-length 65536 --max-running-requests 256 --chunked-prefill-size 8192 --enable-mixed-chunk --num-continuous-decode-steps 8 --grammar-backend llguidance --mem-fraction-static 0.7
     ports:
