@@ -7,8 +7,6 @@ RUN apt-get update && apt-get install -y \
     git-lfs \
     chromium \
     && rm -rf /var/lib/apt/lists/* \
-    && mv /usr/bin/chromium /usr/bin/chromium-orig \
-    && echo '#!/bin/bash\nexec /usr/bin/chromium-orig --no-sandbox "$@"' > /usr/bin/chromium \
     && chmod +x /usr/bin/chromium \
     && git config --global --add safe.directory '*' \
     && git lfs install
