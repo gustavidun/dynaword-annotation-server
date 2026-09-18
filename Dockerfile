@@ -1,7 +1,12 @@
 FROM python:3.12-slim
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
-RUN apt-get update && apt-get install -y git git-lfs && rm -rf /var/lib/apt/lists/* \
+# install git, git-lfs and chromium
+RUN apt-get update && apt-get install -y \
+    git \
+    git-lfs \
+    chromium \
+    && rm -rf /var/lib/apt/lists/* \
     && git config --global --add safe.directory '*' \
     && git lfs install
 
@@ -19,4 +24,4 @@ COPY config.yaml /app/config.yaml
 
 EXPOSE 8080
 
-CMD ["uvicorn", "src.app:app", "--port", "8080"]
+CMD ["uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8080"]
