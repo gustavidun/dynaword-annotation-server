@@ -59,7 +59,7 @@ def annotate_dataset(repo_id: str, remote_path: str, local_path: Path, dataset_n
     metadata = ds.map(
         annotate_sample,
         batched=False,
-        num_proc=8,
+        num_proc=64,
         remove_columns=[col for col in ds.column_names if col not in ["id", "dataset"]])
     metadata.to_parquet(str(dest))
     return dest

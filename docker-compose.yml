@@ -17,7 +17,7 @@ services:
               capabilities: [ gpu ]
     healthcheck:
           test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
-          interval: 10s
+          interval: 30s
           timeout: 5s
           retries: 30
           start_period: 30s
