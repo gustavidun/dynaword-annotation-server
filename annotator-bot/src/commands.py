@@ -1,7 +1,9 @@
+from traceback import format_exc
+
 from huggingface_hub import Discussion
 
 from src.annotate import annotate_dataset
-from src.db import Webhook 
+from src.db import Webhook, mark_webhooks_completed 
 from src.hf_api import (
     get_discussion, add_comment,
     update_comment, upload_to_pr, get_datasets
@@ -27,7 +29,10 @@ def parse_and_run_commands(webhooks : list[Webhook]):
                 webhook.payload["repo"]["name"],
                 webhook.payload["discussion"]["num"]
             )
+            mark_webhooks_completed([webhook.id])
             run_command(comment, discussion)
+        else:
+            mark_webhooks_completed([webhook.id])
 
 def run_command(command: str, discussion: Discussion):
     args = command.lower().split()
@@ -70,7 +75,7 @@ def add_annotations(discussion : Discussion, *args):
 
         try:
             checkout_pr(discussion.repo_id, discussion.num)
-            
+
         except Exception as e:
             status_comment_msg += f"\n \n **ERROR**: Failed to checkout PR. Error message: `{e}`."
             update_comment(discussion, status_comment.id, status_comment_msg)
@@ -87,7 +92,7 @@ def add_annotations(discussion : Discussion, *args):
             status_comment_msg += "\n \n **INFO**: Annotation completed." 
             update_comment(discussion,status_comment.id,status_comment_msg)
         except Exception as e:
-            status_comment_msg += f"\n \n **ERROR**: Annotation failed. Error message: `{e}` " 
+            status_comment_msg += f"\n \n **ERROR**: Annotation failed. Error message: `{e}` Traceback: `{format_exc(15)}`" 
             update_comment(discussion,status_comment.id,status_comment_msg)
             return
 

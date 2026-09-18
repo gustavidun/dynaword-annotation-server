@@ -7,7 +7,7 @@ from pathlib import Path
 from src.config import HF_REPO_IDS, INTERVAL_MINUTES
 from src.hf_api import get_unannotated_datasets, create_pr
 from src.annotate import annotate_dataset
-from src.db import get_pending_webhooks, mark_webhooks_completed
+from src.db import get_pending_webhooks
 from src.commands import parse_and_run_commands
 from src.repos import init_repos
 
@@ -51,7 +51,6 @@ async def fetch_webhooks():
     webhooks = get_pending_webhooks()
     if webhooks:
         parse_and_run_commands(webhooks)
-        mark_webhooks_completed([w.id for w in webhooks])
     return {"status": "Ran commands."}
 
 @app.get("/annotate_new_datasets")
