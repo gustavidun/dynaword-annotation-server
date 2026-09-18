@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
     git-lfs \
     chromium \
     && rm -rf /var/lib/apt/lists/* \
+    && ln -s /usr/bin/chromium /usr/bin/google-chrome \
     && git config --global --add safe.directory '*' \
     && git lfs install
 
@@ -17,8 +18,6 @@ COPY annotator-bot/requirements.txt /app/annotator-bot/
 
 WORKDIR /app/annotator-bot
 RUN uv pip install --system --no-cache -r requirements.txt
-
-RUN plotly_get_chrome
 
 COPY repos /app/repos
 COPY annotator-bot /app/annotator-bot
