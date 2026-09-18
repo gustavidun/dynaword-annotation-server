@@ -18,6 +18,8 @@ COPY annotator-bot/requirements.txt /app/annotator-bot/
 WORKDIR /app/annotator-bot
 RUN uv pip install --system --no-cache -r requirements.txt
 
+RUN plotly_get_chrome
+
 COPY repos /app/repos
 COPY annotator-bot /app/annotator-bot
 COPY config.yaml /app/config.yaml
