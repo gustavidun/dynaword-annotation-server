@@ -70,6 +70,7 @@ def add_annotations(discussion : Discussion, *args):
 
         try:
             checkout_pr(discussion.repo_id, discussion.num)
+            
         except Exception as e:
             status_comment_msg += f"\n \n **ERROR**: Failed to checkout PR. Error message: `{e}`."
             update_comment(discussion, status_comment.id, status_comment_msg)
@@ -86,7 +87,7 @@ def add_annotations(discussion : Discussion, *args):
             status_comment_msg += "\n \n **INFO**: Annotation completed." 
             update_comment(discussion,status_comment.id,status_comment_msg)
         except Exception as e:
-            status_comment_msg += "\n \n **ERROR**: Annotation failed." 
+            status_comment_msg += f"\n \n **ERROR**: Annotation failed. Error message: `{e}` " 
             update_comment(discussion,status_comment.id,status_comment_msg)
             return
 
