@@ -8,7 +8,6 @@ services:
       - "8000:8000"
     environment:
       - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN:-}
-      - HF_HUB_DISABLE_XET=1
     deploy:
       resources:
         reservations:
@@ -32,7 +31,6 @@ services:
     environment:
       - HF_TOKEN=${HF_TOKEN:-}
       - WEBHOOK_SECRET=${WEBHOOK_SECRET:-}
-      - HF_HUB_DISABLE_XET=1
     depends_on:
       sglang:
         condition: service_healthy

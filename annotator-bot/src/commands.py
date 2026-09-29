@@ -30,7 +30,10 @@ def parse_and_run_commands(webhooks : list[Webhook]):
                 webhook.payload["discussion"]["num"]
             )
             mark_webhooks_completed([webhook.id])
-            run_command(comment, discussion)
+            try:
+                run_command(comment, discussion)
+            except Exception as e:
+                print(f"Error running command: {e}\n{format_exc()}")
         else:
             mark_webhooks_completed([webhook.id])
 
