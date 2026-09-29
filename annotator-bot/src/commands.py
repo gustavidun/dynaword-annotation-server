@@ -82,13 +82,20 @@ def add_annotations(discussion : Discussion, *args):
             return
         
         try:
-            dest = annotate_dataset(
+            dest = None
+            for progress in annotate_dataset(
                 discussion.repo_id,
                 get_dataset_path(dataset_name), 
                 repo_dirs[discussion.repo_id] / "data" / dataset_name, 
                 revision=f"refs/pr/{discussion.num}",
                 dataset_name=dataset_name
-            )
+            ):
+                if "dest" in progress:
+                    dest = progress["dest"]
+
+            if dest is None:
+                raise RuntimeError("annotate_dataset finished without producing a file.")
+
             status_comment_msg += "\n \n **INFO**: Annotation completed." 
             update_comment(discussion,status_comment.id,status_comment_msg)
         except Exception as e:
