@@ -1,4 +1,5 @@
 import logging
+import time
 from collections.abc import Generator
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -87,6 +88,8 @@ def annotate_dataset(
     results: list[dict | None] = [None] * total
     completed = 0
     last_yielded_pct = 0
+    yield_interval = 1 if total > 500_000 else 10
+    t_start = time.monotonic()
 
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         futures = {
@@ -102,21 +105,30 @@ def annotate_dataset(
                 completed += 1
 
                 pct = round(completed / total * 100)
-                if pct >= last_yielded_pct + 10:
-                    last_yielded_pct = pct // 10 * 10
+                if pct >= last_yielded_pct + yield_interval:
+                    last_yielded_pct = pct // yield_interval * yield_interval
+                    elapsed = time.monotonic() - t_start
+                    docs_per_min = completed / elapsed * 60 if elapsed > 0 else 0
+                    remaining = (total - completed) / completed * elapsed if completed > 0 else 0
                     yield {
                         "completed": completed,
                         "total": total,
                         "percent": pct,
+                        "docs_per_min": round(docs_per_min, 1),
+                        "eta_min": round(remaining / 60, 1),
                     }
         except Exception:
             raise
 
     metadata = Dataset.from_list(results)
     metadata.to_parquet(str(dest))
+    elapsed = time.monotonic() - t_start
+    docs_per_min = total / elapsed * 60 if elapsed > 0 else 0
     yield {
         "completed": total,
         "total": total,
         "percent": 100,
+        "docs_per_min": round(docs_per_min, 1),
+        "eta_min": 0,
         "dest": dest,
     }

@@ -90,6 +90,12 @@ def add_annotations(discussion : Discussion, *args):
                 revision=f"refs/pr/{discussion.num}",
                 dataset_name=dataset_name
             ):
+                pct = progress["percent"]
+                dpm = progress["docs_per_min"]
+                eta = progress["eta_min"]
+                status_comment_msg += f"\n \n **INFO**: Progress: {pct}% ({progress['completed']}/{progress['total']}) — {dpm} docs/min, ~{eta} min remaining"
+                update_comment(discussion, status_comment.id, status_comment_msg)
+
                 if "dest" in progress:
                     dest = progress["dest"]
 
