@@ -49,10 +49,6 @@ def annotate_document(document: str) -> dict:
 
 
 def _process_one(idx: int, row: dict) -> tuple[int, dict]:
-    """Process a single dataset row; returns (index, annotation_dict).
-
-    Raises on failure so the caller can abort immediately.
-    """
     return idx, annotate_document(row["text"])
 
 
@@ -90,6 +86,7 @@ def annotate_dataset(
     keep_cols = {"id", "dataset"}
     results: list[dict | None] = [None] * total
     completed = 0
+    last_yielded_pct = 0
 
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         futures = {
@@ -104,11 +101,14 @@ def annotate_dataset(
                 results[idx] = {**base, **annotation}
                 completed += 1
 
-                yield {
-                    "completed": completed,
-                    "total": total,
-                    "percent": round(completed / total * 100),
-                }
+                pct = round(completed / total * 100)
+                if pct >= last_yielded_pct + 10:
+                    last_yielded_pct = pct // 10 * 10
+                    yield {
+                        "completed": completed,
+                        "total": total,
+                        "percent": pct,
+                    }
         except Exception:
             raise
 
