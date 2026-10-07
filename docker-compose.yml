@@ -31,6 +31,7 @@ services:
     environment:
       - HF_TOKEN=${HF_TOKEN:-}
       - WEBHOOK_SECRET=${WEBHOOK_SECRET:-}
+      - PYTHONUNBUFFERED=1
     depends_on:
       sglang:
         condition: service_healthy
