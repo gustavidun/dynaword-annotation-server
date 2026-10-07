@@ -49,6 +49,7 @@ async def root():
 async def fetch_webhooks():
     """Fetch pending webhooks from D1 and run any commands found."""
     webhooks = get_pending_webhooks()
+    print(f"Fetched {len(webhooks)} webhooks from Cloudflare D1.")
     if webhooks:
         parse_and_run_commands(webhooks)
     return {"status": "Ran commands."}
