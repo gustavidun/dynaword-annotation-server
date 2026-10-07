@@ -17,25 +17,21 @@ def parse_and_run_commands(webhooks : list[Webhook]):
         if webhook.status == "completed":
             continue
         
-        if webhook.payload["event"]["action"] != "create" or webhook.payload["event"]["scope"] != "discussion.comment":
-            continue
+        mark_webhooks_completed([webhook.id])
 
-        comment = webhook.payload["comment"].get("content", "")
-        if comment == "":
-            continue
+        comment = webhook.payload.get("comment", {}).get("content", "")
+
         words = comment.split()
         if words and words[0] == "@" + NAME:
             discussion = get_discussion(
                 webhook.payload["repo"]["name"],
                 webhook.payload["discussion"]["num"]
             )
-            mark_webhooks_completed([webhook.id])
             try:
                 run_command(comment, discussion)
             except Exception as e:
                 print(f"Error running command: {e}\n{format_exc()}")
-        else:
-            mark_webhooks_completed([webhook.id])
+            
 
 def run_command(command: str, discussion: Discussion):
     args = command.lower().split()
