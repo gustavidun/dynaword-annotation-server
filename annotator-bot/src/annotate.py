@@ -1,8 +1,10 @@
 import logging
 import time
 from collections.abc import Generator
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, FIRST_COMPLETED, wait
 from pathlib import Path
+import pyarrow as pa
+import pyarrow.parquet as pq
 
 from dynaword.annotations.propella import (
     create_messages,
@@ -62,7 +64,7 @@ def annotate_dataset(
     hf_token: str = HF_TOKEN,
     max_workers: int = MAX_WORKERS,
 ) -> Generator[dict, None, None]:
-    """Annotate a dataset concurrently, yielding progress after each sample.
+    """Annotate a dataset concurrently, yielding progress after set percent increment.
 
     Yields:
         dict with keys: completed, total, percent, and (on the last sample) dest.
@@ -85,43 +87,91 @@ def annotate_dataset(
     total = len(ds)
 
     keep_cols = {"id", "dataset"}
-    results: list[dict | None] = [None] * total
     completed = 0
     last_yielded_pct = 0
-    yield_interval = 1 if total > 500_000 else 10
+    yield_interval = 1 if total > 10_000 else 10
     t_start = time.monotonic()
 
-    with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        futures = {
-            pool.submit(_process_one, idx, ds[idx]): idx
-            for idx in range(total)
-        }
-        try:
-            for future in as_completed(futures):
-                idx = futures[future]
-                _, annotation = future.result()
-                base = {col: ds[idx][col] for col in keep_cols if col in ds[idx]}
-                results[idx] = {**base, **annotation}
-                completed += 1
+    batch_size = 5000
+    current_batch = []
+    
+    writer = None
+    buffer = {}
+    next_write_idx = 0
+    next_submit_idx = 0
 
-                pct = round(completed / total * 100)
-                if pct >= last_yielded_pct + yield_interval:
-                    last_yielded_pct = pct // yield_interval * yield_interval
-                    elapsed = time.monotonic() - t_start
-                    docs_per_min = completed / elapsed * 60 if elapsed > 0 else 0
-                    remaining = (total - completed) / completed * elapsed if completed > 0 else 0
-                    yield {
-                        "completed": completed,
-                        "total": total,
-                        "percent": pct,
-                        "docs_per_min": round(docs_per_min, 1),
-                        "eta_min": round(remaining / 60, 1),
-                    }
+    def flush_batch():
+        nonlocal writer, current_batch
+        if not current_batch:
+            return
+        table = pa.Table.from_pylist(current_batch)
+        if writer is None:
+            writer = pq.ParquetWriter(dest, table.schema)
+        writer.write_table(table)
+        current_batch.clear()
+
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        pending = set()
+        future_to_idx = {}
+        
+        def submit_more():
+            nonlocal next_submit_idx
+            # keep up to 2 * max_workers tasks in flight
+            while len(pending) < max_workers * 2 and next_submit_idx < total:
+                future = pool.submit(_process_one, next_submit_idx, ds[next_submit_idx])
+                future_to_idx[future] = next_submit_idx
+                pending.add(future)
+                next_submit_idx += 1
+
+        submit_more()
+
+        try:
+            while pending:
+                done, pending = wait(pending, return_when=FIRST_COMPLETED)
+                for future in done:
+                    idx = future_to_idx.pop(future)
+                    _, annotation = future.result()
+                    
+                    base = {col: ds[idx][col] for col in keep_cols if col in ds[idx]}
+                    buffer[idx] = {**base, **annotation}
+                    
+                    while next_write_idx in buffer:
+                        current_batch.append(buffer.pop(next_write_idx))
+                        next_write_idx += 1
+                        if len(current_batch) >= batch_size:
+                            flush_batch()
+                    
+                    completed += 1
+
+                    pct = round(completed / total * 100)
+                    if pct >= last_yielded_pct + yield_interval:
+                        last_yielded_pct = pct // yield_interval * yield_interval
+                        elapsed = time.monotonic() - t_start
+                        docs_per_min = completed / elapsed * 60 if elapsed > 0 else 0
+                        remaining = (total - completed) / completed * elapsed if completed > 0 else 0
+                        yield {
+                            "completed": completed,
+                            "total": total,
+                            "percent": pct,
+                            "docs_per_min": round(docs_per_min, 1),
+                            "eta_min": round(remaining / 60, 1),
+                        }
+                
+                submit_more()
         except Exception:
+            if writer:
+                writer.close()
             raise
 
-    metadata = Dataset.from_list(results)
-    metadata.to_parquet(str(dest))
+    # flush any remaining items in the buffer
+    while next_write_idx in buffer:
+        current_batch.append(buffer.pop(next_write_idx))
+        next_write_idx += 1
+    flush_batch()
+    
+    if writer:
+        writer.close()
+
     elapsed = time.monotonic() - t_start
     docs_per_min = total / elapsed * 60 if elapsed > 0 else 0
     yield {
