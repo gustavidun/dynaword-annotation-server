@@ -92,8 +92,8 @@ def add_annotations(discussion : Discussion, *args):
                 pct = progress["percent"]
                 dpm = progress["docs_per_min"]
                 eta = progress["eta_min"]
-                status_comment_msg += f"\n \n **INFO**: Progress: {pct}% ({progress['completed']}/{progress['total']}) — {dpm} docs/min, ~{eta} min remaining"
-                update_comment(discussion, status_comment.id, status_comment_msg)
+                current_progress_msg = f"{status_comment_msg}\n \n **INFO**: Progress: {pct}% ({progress['completed']}/{progress['total']}) — {dpm} docs/min, ~{eta} min remaining"
+                update_comment(discussion, status_comment.id, current_progress_msg)
 
                 if "dest" in progress:
                     dest = progress["dest"]
