@@ -1,3 +1,5 @@
+import threading
+import queue
 from traceback import format_exc
 
 from huggingface_hub import Discussion
@@ -11,6 +13,24 @@ from src.hf_api import (
 from src.config import NAME
 from src.util import get_dataset_path
 from src.repos import run_test, checkout_pr, repo_dirs, run_update_descriptive_statistics
+
+command_queue = queue.Queue()
+is_busy = False
+
+def worker_thread():
+    global is_busy
+    while True:
+        comment, discussion = command_queue.get()
+        is_busy = True
+        try:
+            run_command(comment, discussion)
+        except Exception as e:
+            print(f"Error running command: {e}\n{format_exc()}")
+        finally:
+            is_busy = False
+            command_queue.task_done()
+
+threading.Thread(target=worker_thread, daemon=True).start()
 
 def parse_and_run_commands(webhooks : list[Webhook]):
     for webhook in webhooks:
@@ -27,10 +47,11 @@ def parse_and_run_commands(webhooks : list[Webhook]):
                 webhook.payload["repo"]["name"],
                 webhook.payload["discussion"]["num"]
             )
-            try:
-                run_command(comment, discussion)
-            except Exception as e:
-                print(f"Error running command: {e}\n{format_exc()}")
+            
+            if is_busy:
+                add_comment(discussion, "Hi! I am currently busy with another task. Your command has been added to the queue!")
+                
+            command_queue.put((comment, discussion))
             
 
 def run_command(command: str, discussion: Discussion):
