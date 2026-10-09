@@ -49,7 +49,7 @@ def parse_and_run_commands(webhooks : list[Webhook]):
             )
             
             if is_busy:
-                add_comment(discussion, "Hi! I am currently busy with another task. Your command has been added to the queue!")
+                add_comment(discussion, "I am currently busy with another task. Your command has been added to the queue!")
                 
             command_queue.put((comment, discussion))
             
