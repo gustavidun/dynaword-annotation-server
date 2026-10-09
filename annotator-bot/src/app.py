@@ -19,12 +19,12 @@ async def lifespan(app: FastAPI):
     scheduler.add_job(
         fetch_webhooks,
         trigger="interval",
-        minutes=INTERVAL_MINUTES,
+        seconds=30,
         id="nth_minute_job",
         replace_existing=True
     )
     scheduler.start()
-    print(f"APScheduler started. Watching '{HF_REPO_IDS}' every {INTERVAL_MINUTES} minute(s).")
+    print(f"APScheduler started. Watching '{HF_REPO_IDS}' every 30 seconds.")
 
     yield
 
