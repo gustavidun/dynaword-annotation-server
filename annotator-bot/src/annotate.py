@@ -14,14 +14,14 @@ from dynaword.annotations.propella import (
 from openai import OpenAI
 from datasets import Dataset
 from huggingface_hub import hf_hub_download
-from src.config import MODEL, ROOT, HF_TOKEN
+from src.config import MODEL, HF_TOKEN
 
 logger = logging.getLogger(__name__)
 
-MAX_WORKERS = 250
+MAX_WORKERS = 64
 
 try:
-    client = OpenAI(base_url="http://sglang:8000/v1", api_key="EMPTY")
+    client = OpenAI(base_url="http://sglang:8000/v1", api_key="EMPTY", timeout=1200, connect=60.0)
 except Exception as err:
     print(f"Can't connect to server: {err}")
     raise err
