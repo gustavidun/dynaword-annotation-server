@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 MAX_WORKERS = 64
 
 try:
-    client = OpenAI(base_url="http://sglang:8000/v1", api_key="EMPTY", timeout=1200, connect=60.0)
+    client = OpenAI(base_url="http://sglang:8000/v1", api_key="EMPTY", timeout=1200)
 except Exception as err:
     print(f"Can't connect to server: {err}")
     raise err
