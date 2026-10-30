@@ -89,7 +89,7 @@ def annotate_dataset(
     keep_cols = {"id", "dataset"}
     completed = 0
     last_yielded_pct = 0
-    yield_interval = 1 if total > 10_000 else 10
+    yield_interval = 1 if total > 1_000 else 10
     t_start = time.monotonic()
 
     batch_size = 5000
