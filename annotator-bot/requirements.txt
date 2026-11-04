@@ -4,6 +4,7 @@ apscheduler>=3.10.4
 huggingface_hub==0.24.7
 pyyaml>=6.0
 ../dynaword
+../propella_bekko
 python-dotenv
 uv>=0.12.11
 

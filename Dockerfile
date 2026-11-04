@@ -17,6 +17,8 @@ ENV BROWSER_PATH=/usr/bin/chromium
 WORKDIR /app
 
 COPY dynaword /app/dynaword
+copy propella-bekko /app/propella-bekko
+
 COPY annotator-bot/requirements.txt /app/annotator-bot/
 
 WORKDIR /app/annotator-bot

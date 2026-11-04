@@ -1,6 +1,6 @@
 interval_minutes: 1
 hf_repo_ids: ["gustavidun/staging-dynaword", "danish-foundation-models/danish-dynaword"]
 parquet_pattern: "data/*/data.parquet"
-model: "ellamind/propella-1-4b"
+model: "danish-foundation-models/propella-bekko-a25m"
 name: "dynaword-agent"
 webhook_url: "https://dynaword-annotation-server.gustavidunsloth.workers.dev"
