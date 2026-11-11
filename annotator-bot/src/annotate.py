@@ -13,7 +13,7 @@ from propella_bekko.models import PropellaBekko
 from src.config import MODEL, HF_TOKEN
 
 logger = logging.getLogger(__name__)
-model, tok, cfg = PropellaBekko.load_model(snapshot_download(repo_id=MODEL))
+model, tok, cfg = PropellaBekko.load(snapshot_download(repo_id=MODEL))
 ann = Annotator(model, tok, cfg["max_length"], cfg["tail_tokens"], device="cuda", max_tokens=262144)
 
 def annotate_documents(docs : list[dict],annotator=ann) -> list[dict]:
