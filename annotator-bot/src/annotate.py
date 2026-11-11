@@ -6,12 +6,15 @@ import pyarrow.parquet as pq
 
 from datasets import Dataset
 from huggingface_hub import hf_hub_download, snapshot_download
+from transformers import PreTrainedTokenizerFast
+import transformers
 
 from propella_bekko.inference import Annotator
 from propella_bekko.models import PropellaBekko
 
 from src.config import MODEL, HF_TOKEN
 
+transformers.TokenizersBackend = PreTrainedTokenizerFast
 logger = logging.getLogger(__name__)
 model, tok, cfg = PropellaBekko.load(snapshot_download(repo_id=MODEL))
 ann = Annotator(model, tok, cfg["max_length"], cfg["tail_tokens"], device="cuda", max_tokens=262144)
