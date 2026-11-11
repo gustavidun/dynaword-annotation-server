@@ -19,7 +19,7 @@ WORKDIR /app
 COPY dynaword /app/dynaword
 COPY propella-bekko /app/propella-bekko
 
-ENV PYTHONPATH="/app/propella-bekko/src/propella_bekko/:${PYTHONPATH}"
+ENV PYTHONPATH="/app/propella-bekko/src:${PYTHONPATH}"
 
 COPY annotator-bot/requirements.txt /app/annotator-bot/
 
