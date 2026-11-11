@@ -3,25 +3,19 @@ import time
 from pathlib import Path
 import pyarrow as pa
 import pyarrow.parquet as pq
-
+import torch
 from datasets import Dataset
-from huggingface_hub import hf_hub_download, snapshot_download
-from transformers import PreTrainedTokenizerFast
-import transformers
-
-from propella_bekko.inference import Annotator
-from propella_bekko.models import PropellaBekko
+from huggingface_hub import hf_hub_download
+from transformers import AutoModel, AutoTokenizer
 
 from src.config import MODEL, HF_TOKEN
 
-transformers.TokenizersBackend = PreTrainedTokenizerFast
 logger = logging.getLogger(__name__)
-model, tok, cfg = PropellaBekko.load(snapshot_download(repo_id=MODEL))
-ann = Annotator(model, tok, cfg["max_length"], cfg["tail_tokens"], device="cuda", max_tokens=262144)
 
-def annotate_documents(docs : list[dict],annotator=ann) -> list[dict]:
-    preds = annotator.annotate(docs)
-    return preds
+device = "cuda" if torch.cuda.is_available() else "cpu"
+tokenizer = AutoTokenizer.from_pretrained(MODEL, extra_special_tokens={}, trust_remote_code=True, token=HF_TOKEN or None)
+model = AutoModel.from_pretrained(MODEL, trust_remote_code=True, token=HF_TOKEN or None).eval().to(device)
+
 
 def annotate_dataset(
     repo_id: str,
@@ -30,6 +24,7 @@ def annotate_dataset(
     dataset_name: str,
     revision: str | None = None,
     hf_token: str = HF_TOKEN,
+    num_shards: int = 10,
 ):
     print(f"Running annotations on {repo_id} {revision} {remote_path}.")
     dest = local_path / "metadata.parquet"
@@ -48,25 +43,27 @@ def annotate_dataset(
     ds = ds.add_column("dataset", [dataset_name] * len(ds))
     total = len(ds)
 
-    num_shards = 10
     ds_shards = [ds.shard(num_shards=num_shards, index=i) for i in range(num_shards)]
 
     completed = 0
     t_start = time.monotonic()
-
     writer = None
+
     try:
         for i, shard in enumerate(ds_shards):
             rows = shard.to_pylist()
-            preds = annotate_documents(rows)
-            table = pa.Table.from_pylist([{"dataset": r["dataset"], "id": r["id"], **p} for r, p in zip(rows, preds, strict=True)])
+            preds = model.annotate(tokenizer, [r["text"] for r in rows])
+
+            table = pa.Table.from_pylist(
+                [{"dataset": r["dataset"], "id": r["id"], **p} for r, p in zip(rows, preds, strict=True)]
+            )
             if writer is None:
                 writer = pq.ParquetWriter(dest, table.schema)
             writer.write_table(table)
-    
+
             completed += len(rows)
             elapsed = time.monotonic() - t_start
-            pct = round((i+1)*(100/num_shards))
+            pct = round((i + 1) * (100 / num_shards))
             docs_per_min = completed / elapsed * 60 if elapsed > 0 else 0
             remaining = (total - completed) / completed * elapsed if completed > 0 else 0
 
@@ -77,13 +74,12 @@ def annotate_dataset(
                 "docs_per_min": round(docs_per_min, 1),
                 "eta_min": round(remaining / 60, 1),
             }
+
             if i == num_shards - 1:
-                prog_info.update({"dest": dest})
+                prog_info["dest"] = dest
 
             yield prog_info
 
     finally:
         if writer:
             writer.close()
-
-
