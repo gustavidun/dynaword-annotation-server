@@ -51,7 +51,7 @@ def annotate_dataset(
 
     try:
         for i, shard in enumerate(ds_shards):
-            rows = shard.to_pylist()
+            rows = shard.to_list()
             preds = model.annotate(tokenizer, [r["text"] for r in rows])
 
             table = pa.Table.from_pylist(
