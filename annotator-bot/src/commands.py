@@ -176,11 +176,75 @@ def add_annotations(discussion : Discussion, *args):
         if 'status_comment' in locals(): # if status_comment was created before the Exception happened, update it
             update_comment(discussion, status_comment.id, f"\n \n **ERROR**: Annotation failed. Error message: `{err}`")
     
+
+def run_tests_command(discussion: Discussion, *args):
+    if not discussion.is_pull_request:
+        add_comment(discussion, "Test failed. Discussion is not a pull request.")
+        return
+
+    status_comment_msg = "**INFO**: Running tests..."
+    status_comment = add_comment(discussion, status_comment_msg)
+
+    try:
+        checkout_pr(discussion.repo_id, discussion.num)
+    except Exception as e:
+        status_comment_msg += f"\n \n **ERROR**: Failed to checkout PR. Error message: `{e}`."
+        update_comment(discussion, status_comment.id, status_comment_msg)
+        return
+
+    try:
+        test_log = run_test(discussion.repo_id)
+        status_comment_msg += "\n \n **INFO**: Tests passed."
+        update_comment(discussion, status_comment.id, status_comment_msg)
+        upload_to_pr(
+            discussion.repo_id,
+            local_path=[str(test_log)],
+            pr_num=discussion.num,
+            commit_message="Add test results",
+        )
+        status_comment_msg += "\n \n **SUCCESS**: Uploaded test results."
+        update_comment(discussion, status_comment.id, status_comment_msg)
+    except Exception as e:
+        status_comment_msg += f"\n \n **ERROR**: Tests failed. See test_results.log for more information. Error: `{e}`"
+        update_comment(discussion, status_comment.id, status_comment_msg)
+        try:
+            upload_to_pr(
+                discussion.repo_id,
+                local_path=[str(repo_dirs[discussion.repo_id] / "test_results.log")],
+                pr_num=discussion.num,
+                commit_message="Add test results (failed)",
+            )
+        except Exception:
+            pass
+
+
+def update_descriptive_statistics_command(discussion: Discussion, *args):
+    if not discussion.is_pull_request:
+        add_comment(discussion, "Failed. Discussion is not a pull request.")
+        return
+
+    status_comment = add_comment(discussion, "**INFO**: Updating descriptive statistics...")
+
+    try:
+        checkout_pr(discussion.repo_id, discussion.num)
+        stats_files = run_update_descriptive_statistics(discussion.repo_id)
+        upload_to_pr(
+            discussion.repo_id,
+            local_path=[str(f) for f in stats_files],
+            pr_num=discussion.num,
+            commit_message="Update descriptive statistics",
+        )
+        update_comment(discussion, status_comment.id, "**SUCCESS**: Descriptive statistics updated and uploaded.")
+    except Exception as e:
+        update_comment(discussion, status_comment.id, f"**ERROR**: Failed to update descriptive statistics. Error: `{e}`")
+
+
+
 COMMANDS = {
     "annotate": add_annotations,
-    "ping": ping
+    "ping": ping,
+    "test": run_tests_command,
+    "tests": run_tests_command,
+    "update-descriptive-statistics": update_descriptive_statistics_command,
+    "update_descriptive_statistics": update_descriptive_statistics_command,
 }
-
-
-
-    

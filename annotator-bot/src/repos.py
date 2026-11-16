@@ -41,23 +41,28 @@ def run_test(repo_id: str):
         print(f"Tests failed with exit code {e.returncode}")
         raise
 
-def run_update_descriptive_statistics(repo_id: str, datasets: list[str]):
+def run_update_descriptive_statistics(repo_id: str, datasets: list[str] | None = None):
     repo_dir = repo_dirs[repo_id]
     try:
         cmd = '. .venv/bin/activate && uv run src/dynaword/update_descriptive_statistics.py' 
-        for dataset in datasets:
-            subprocess.run(["bash", "-c", f"{cmd} --dataset {dataset} --force"], check=True, cwd=repo_dir)
-        subprocess.run(["bash", "-c", f"{cmd} --dataset default --force"], check=True, cwd=repo_dir)
+        if datasets:
+            for dataset in datasets:
+                subprocess.run(["bash", "-c", f"{cmd} --dataset {dataset} --force"], check=True, cwd=repo_dir)
+            subprocess.run(["bash", "-c", f"{cmd} --dataset default --force"], check=True, cwd=repo_dir)
+            target_datasets = datasets
+        else:
+            subprocess.run(["bash", "-c", f"{cmd} --force"], check=True, cwd=repo_dir)
+            target_datasets = [d.name for d in (repo_dir / "data").iterdir() if d.is_dir()]
         
-        print(f"Descriptive statistics updated for {', '.join(datasets)}")
+        print(f"Descriptive statistics updated for {', '.join(target_datasets)}")
         return (
             [repo_dir / "descriptive_stats.json"] +
             [f for f in Path(repo_dir / "images").glob("*.*") if f.suffix in [".png", ".svg", ".html"]] +
-            [repo_dir / "data" / dataset / "descriptive_stats.json" for dataset in datasets] +
-            [repo_dir / "data" / dataset / "descriptive_stats.json" for dataset in datasets] +
-            [repo_dir / "data" / dataset / "images/dist_document_length.png" for dataset in datasets]
+            [repo_dir / "data" / dataset / "descriptive_stats.json" for dataset in target_datasets if (repo_dir / "data" / dataset / "descriptive_stats.json").exists()] +
+            [repo_dir / "data" / dataset / "images/dist_document_length.png" for dataset in target_datasets if (repo_dir / "data" / dataset / "images/dist_document_length.png").exists()]
         )
     except subprocess.CalledProcessError as e:
         print(f"Descriptive statistics update failed with exit code {e.returncode}")
         raise
+
 
