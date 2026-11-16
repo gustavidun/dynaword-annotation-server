@@ -57,7 +57,14 @@ def annotate_dataset(
         print(f"Generated {len(ds_shards)} shards.")
         for i, shard in enumerate(ds_shards):
             shard_len = len(shard)
+            batch_start_time = None
+            
             for j in range(0, shard_len, batch_size):
+                if j % 10 == 0:
+                    if j != 0: 
+                        print(f"Annotated 10 batches in {time.monotonic - batch_start_time} seconds.")
+                    batch_start_time = time.monotonic()
+
                 batch = shard[j : j + batch_size]
                 preds = model.annotate(tokenizer, batch["text"])
                 table = pa.Table.from_pylist(
