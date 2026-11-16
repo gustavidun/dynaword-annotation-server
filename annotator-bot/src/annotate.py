@@ -24,12 +24,12 @@ def annotate_dataset(
     dataset_name: str,
     revision: str | None = None,
     hf_token: str = HF_TOKEN,
-    num_shards: int = 10,
 ):
     print(f"Running annotations on {repo_id} {revision} {remote_path}.")
     dest = local_path / "metadata.parquet"
     dest.parent.mkdir(parents=True, exist_ok=True)
 
+    print(f"Downloading {remote_path} from {repo_id}...")
     local_parquet = hf_hub_download(
         repo_id=repo_id,
         filename=remote_path,
@@ -42,7 +42,9 @@ def annotate_dataset(
     ds = Dataset.from_parquet(local_parquet)
     ds = ds.add_column("dataset", [dataset_name] * len(ds))
     total = len(ds)
+    print(f"Loaded {total} documents from {dataset_name}.")
 
+    num_shards = 100 if total > 500 else max(1, min(10, total))
     ds_shards = [ds.shard(num_shards=num_shards, index=i) for i in range(num_shards)]
 
     completed = 0
@@ -52,21 +54,20 @@ def annotate_dataset(
     batch_size = 128
 
     try:
+        print(f"Generated {len(ds_shards)} shards.")
         for i, shard in enumerate(ds_shards):
-            rows = shard.to_list()
-            texts = [r["text"] for r in rows]
-            preds = []
-            for j in range(0, len(texts), batch_size):
-                preds.extend(model.annotate(tokenizer, texts[j : j + batch_size]))
+            shard_len = len(shard)
+            for j in range(0, shard_len, batch_size):
+                batch = shard[j : j + batch_size]
+                preds = model.annotate(tokenizer, batch["text"])
+                table = pa.Table.from_pylist(
+                    [{"dataset": d, "id": _id, **p} for d, _id, p in zip(batch["dataset"], batch["id"], preds, strict=True)]
+                )
+                if writer is None:
+                    writer = pq.ParquetWriter(dest, table.schema)
+                writer.write_table(table)
 
-            table = pa.Table.from_pylist(
-                [{"dataset": r["dataset"], "id": r["id"], **p} for r, p in zip(rows, preds, strict=True)]
-            )
-            if writer is None:
-                writer = pq.ParquetWriter(dest, table.schema)
-            writer.write_table(table)
-
-            completed += len(rows)
+            completed += shard_len
             elapsed = time.monotonic() - t_start
             pct = round((i + 1) * (100 / num_shards))
             docs_per_min = completed / elapsed * 60 if elapsed > 0 else 0
@@ -79,6 +80,7 @@ def annotate_dataset(
                 "docs_per_min": round(docs_per_min, 1),
                 "eta_min": round(remaining / 60, 1),
             }
+            print(f"[{dataset_name}] Progress: {pct}% ({completed}/{total}) — {round(docs_per_min, 1)} docs/min, ~{round(remaining / 60, 1)} min remaining")
 
             if i == num_shards - 1:
                 prog_info["dest"] = dest
