@@ -49,10 +49,15 @@ def annotate_dataset(
     t_start = time.monotonic()
     writer = None
 
+    batch_size = 128
+
     try:
         for i, shard in enumerate(ds_shards):
             rows = shard.to_list()
-            preds = model.annotate(tokenizer, [r["text"] for r in rows])
+            texts = [r["text"] for r in rows]
+            preds = []
+            for j in range(0, len(texts), batch_size):
+                preds.extend(model.annotate(tokenizer, texts[j : j + batch_size]))
 
             table = pa.Table.from_pylist(
                 [{"dataset": r["dataset"], "id": r["id"], **p} for r, p in zip(rows, preds, strict=True)]
