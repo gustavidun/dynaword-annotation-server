@@ -1,8 +1,9 @@
 FROM python:3.12-slim
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
-# install git, git-lfs and chromium
+# install build-essential (for triton/torch compiler), git, git-lfs and chromium
 RUN apt-get update && apt-get install -y \
+    build-essential \
     git \
     git-lfs \
     chromium \
@@ -11,8 +12,9 @@ RUN apt-get update && apt-get install -y \
     && git config --global --add safe.directory '*' \
     && git lfs install
 
-# for kaleido
+# for kaleido and torch/triton C compiler
 ENV BROWSER_PATH=/usr/bin/chromium 
+ENV CC=gcc
 
 WORKDIR /app
 
