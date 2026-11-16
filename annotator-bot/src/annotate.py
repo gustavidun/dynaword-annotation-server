@@ -13,6 +13,7 @@ from src.config import MODEL, HF_TOKEN
 logger = logging.getLogger(__name__)
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"Propella-Bekko initialized on device: {device}")
 tokenizer = AutoTokenizer.from_pretrained(MODEL, extra_special_tokens={}, trust_remote_code=True, token=HF_TOKEN or None)
 model = AutoModel.from_pretrained(MODEL, trust_remote_code=True, token=HF_TOKEN or None).eval().to(device)
 
@@ -25,7 +26,7 @@ def annotate_dataset(
     revision: str | None = None,
     hf_token: str = HF_TOKEN,
 ):
-    print(f"Running annotations on {repo_id} {revision} {remote_path}.")
+    print(f"Running annotations on {repo_id} {revision} {remote_path} using {device}.")
     dest = local_path / "metadata.parquet"
     dest.parent.mkdir(parents=True, exist_ok=True)
 
@@ -51,28 +52,24 @@ def annotate_dataset(
     t_start = time.monotonic()
     writer = None
 
-    batch_size = 128
+    batch_size = 512
 
     try:
         print(f"Generated {len(ds_shards)} shards.")
         for i, shard in enumerate(ds_shards):
             shard_len = len(shard)
-            batch_start_time = None
             
-            for j in range(0, shard_len, batch_size):
-                if j % 10 == 0:
-                    if j != 0: 
-                        print(f"Annotated 10 batches in {time.monotonic - batch_start_time} seconds.")
-                    batch_start_time = time.monotonic()
+            with torch.inference_mode():
+                for j in range(0, shard_len, batch_size):
+                    batch = shard[j : j + batch_size]
+                    preds = model.annotate(tokenizer, batch["text"])
+                    table = pa.Table.from_pylist(
+                        [{"dataset": d, "id": _id, **p} for d, _id, p in zip(batch["dataset"], batch["id"], preds, strict=True)]
+                    )
+                    if writer is None:
+                        writer = pq.ParquetWriter(dest, table.schema)
+                    writer.write_table(table)
 
-                batch = shard[j : j + batch_size]
-                preds = model.annotate(tokenizer, batch["text"])
-                table = pa.Table.from_pylist(
-                    [{"dataset": d, "id": _id, **p} for d, _id, p in zip(batch["dataset"], batch["id"], preds, strict=True)]
-                )
-                if writer is None:
-                    writer = pq.ParquetWriter(dest, table.schema)
-                writer.write_table(table)
 
             completed += shard_len
             elapsed = time.monotonic() - t_start

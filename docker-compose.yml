@@ -10,5 +10,12 @@ services:
       - HF_TOKEN=${HF_TOKEN:-}
       - WEBHOOK_SECRET=${WEBHOOK_SECRET:-}
       - PYTHONUNBUFFERED=1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     volumes:
-          - ./repos:/app/repos
+      - ./repos:/app/repos
