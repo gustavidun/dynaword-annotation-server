@@ -138,7 +138,7 @@ def add_annotations(discussion : Discussion, *args):
             update_comment(discussion,status_comment.id,status_comment_msg)
 
         try:
-            stats_files = run_update_descriptive_statistics(discussion.repo_id, [dataset_name])
+            stats_files = run_update_descriptive_statistics(discussion.repo_id)
             status_comment_msg += "\n \n **INFO**: Descriptive statistics updated."
             update_comment(discussion,status_comment.id,status_comment_msg)
             upload_to_pr(
