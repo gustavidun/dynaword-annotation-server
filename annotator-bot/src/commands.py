@@ -218,7 +218,8 @@ def update_descriptive_statistics_command(discussion: Discussion, *args):
         add_comment(discussion, "Failed. Discussion is not a pull request.")
         return
 
-    status_comment = add_comment(discussion, "**INFO**: Updating descriptive statistics...")
+    status_comment_msg = "**INFO**: Updating descriptive statistics..."
+    status_comment = add_comment(discussion, status_comment_msg)
 
     try:
         checkout_pr(discussion.repo_id, discussion.num)
@@ -229,11 +230,11 @@ def update_descriptive_statistics_command(discussion: Discussion, *args):
             pr_num=discussion.num,
             commit_message="Update descriptive statistics",
         )
-        update_comment(discussion, status_comment.id, "**SUCCESS**: Descriptive statistics updated and uploaded.")
+        status_comment_msg += "\n \n **SUCCESS**: Descriptive statistics updated and uploaded."
+        update_comment(discussion, status_comment.id, status_comment_msg)
     except Exception as e:
-        update_comment(discussion, status_comment.id, f"**ERROR**: Failed to update descriptive statistics. Error: `{e}`")
-
-
+        status_comment_msg += f"\n \n **ERROR**: Failed to update descriptive statistics. Error: `{e}`"
+        update_comment(discussion, status_comment.id, status_comment_msg)
 
 COMMANDS = {
     "annotate": add_annotations,
