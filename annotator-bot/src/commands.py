@@ -195,28 +195,22 @@ def run_tests_command(discussion: Discussion, *args):
     try:
         run_test(discussion.repo_id)
         status_comment_msg += "\n \n **INFO**: Tests passed."
+        update_comment(discussion, status_comment.id, status_comment_msg) 
+    except Exception as e:
+        status_comment_msg += f"\n \n **ERROR**: Tests failed. See test_results.log for more information. Error: `{e}`"
         update_comment(discussion, status_comment.id, status_comment_msg)
+
+    try:
         upload_to_pr(
             discussion.repo_id,
             local_path=[str(repo_dirs[discussion.repo_id] / "test_results.log")],
             pr_num=discussion.num,
             commit_message="Add test results",
         )
-        status_comment_msg += "\n \n **SUCCESS**: Uploaded test results."
+    except Exception:
+        status_comment_msg += f"\n \n **ERROR**: Failed to upload test results. Error message: `{e}`."
         update_comment(discussion, status_comment.id, status_comment_msg)
-        
-    except Exception as e:
-        status_comment_msg += f"\n \n **ERROR**: Tests failed. See test_results.log for more information. Error: `{e}`"
-        update_comment(discussion, status_comment.id, status_comment_msg)
-        try:
-            upload_to_pr(
-                discussion.repo_id,
-                local_path=[str(repo_dirs[discussion.repo_id] / "test_results.log")],
-                pr_num=discussion.num,
-                commit_message="Add test results (failed)",
-            )
-        except Exception:
-            pass
+        return
 
 
 def update_descriptive_statistics_command(discussion: Discussion, *args):
