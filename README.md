@@ -51,36 +51,42 @@ The system consists of two primary components:
 
 ## Setup
 
-### 1. Environment
+### Prerequisites
+- [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/)
+- [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) (required for the GPU reservation in [`docker-compose.yml`](./docker-compose.yml); remove the `deploy` block if running on CPU only)
+
+### 1. Prepare Required Directories
+The [`Dockerfile`](./Dockerfile) expects `dynaword/` and `repos/` in the project root:
+- Place the `dynaword` repository/package at `./dynaword` (installed into the image via `annotator-bot/requirements.txt`).
+- Create the `./repos` directory if it does not exist yet:
+  ```bash
+  mkdir -p repos
+  ```
+  It is mounted into the container at `/app/repos`, where the bot clones the Hugging Face repositories listed in [`config.yaml`](./config.yaml) on startup.
+
+### 2. Configure Environment and Settings
 Create a `.env` file in the project root:
 ```env
 HF_TOKEN=hf_...
 WEBHOOK_SECRET=your_webhook_shared_secret
 ```
 
-Edit [`config.yaml`](./config.yaml).
+Edit [`config.yaml`](./config.yaml) to configure the bot `name`, `hf_repo_ids`, `model`, `webhook_url`, and polling `interval_minutes`.
 
-### 2. Deploy Webhooks Worker (Cloudflare)
-If not already deployed:
+### 3. Build and Run
+Build and start the bot with Docker Compose:
 ```bash
-cd webhooks
-npm install
-npx wrangler d1 execute dynaword-webhooks --remote --file=schema.sql
-npx wrangler secret put WEBHOOK_SECRET
-npx wrangler deploy
-cd ..
-```
-Set up a Hugging Face Webhook pointing to the worker URL with `WEBHOOK_SECRET`.
-
-### 3. Start Local LLM Server
-Run an LLM inference server locally with Propella on port 8000, i.e.:
-```bash
-llama-server --hf-repo mradermacher/propella-1-4b-GGUF:Q8_0 --port 8000
+docker compose up --build -d
 ```
 
-### 4. Run the Annotator Bot
-Launch the FastAPI server locally on port 8080
+The FastAPI server is exposed on port `8080` (`http://localhost:8080`).
+
+Useful commands:
 ```bash
-uvicorn src.app:app --reload --port 8080
+# Follow container logs
+docker compose logs -f
+
+# Stop the container
+docker compose down
 ```
 

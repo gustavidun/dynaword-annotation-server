@@ -197,7 +197,7 @@ def run_tests_command(discussion: Discussion, *args):
         status_comment_msg += "\n \n **INFO**: Tests passed."
         update_comment(discussion, status_comment.id, status_comment_msg) 
     except Exception as e:
-        status_comment_msg += f"\n \n **ERROR**: Tests failed. See test_results.log for more information. Error: `{e}`"
+        status_comment_msg += f"\n \n **ERROR**: Tests failed. See test_results.log for more information."
         update_comment(discussion, status_comment.id, status_comment_msg)
 
     try:
