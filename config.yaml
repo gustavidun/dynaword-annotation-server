@@ -1,5 +1,5 @@
 interval_minutes: 1
-hf_repo_ids: ["gustavidun/staging-dynaword", "danish-foundation-models/danish-dynaword", "dynaword-agent/staging-dynaword"]
+hf_repo_ids: ["danish-foundation-models/danish-dynaword", "dynaword-agent/staging-dynaword"]
 parquet_pattern: "data/*/data.parquet"
 model: "danish-foundation-models/propella-bekko-a25m"
 name: "dynaword-agent"
