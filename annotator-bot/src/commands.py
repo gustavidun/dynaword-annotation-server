@@ -138,20 +138,6 @@ def add_annotations(discussion : Discussion, *args):
             update_comment(discussion,status_comment.id,status_comment_msg)
 
         try:
-            stats_files = run_update_descriptive_statistics(discussion.repo_id)
-            status_comment_msg += "\n \n **INFO**: Descriptive statistics updated."
-            update_comment(discussion,status_comment.id,status_comment_msg)
-            upload_to_pr(
-                discussion.repo_id,
-                local_path=[str(f) for f in stats_files],
-                pr_num=discussion.num,
-                commit_message=f"Add descriptive statistics for {dataset_name}"
-            )
-        except Exception as e:
-            status_comment_msg += f"\n \n **ERROR**: Failed to update descriptive statistics. You may need to update them manually. Error: {e}"
-            update_comment(discussion,status_comment.id,status_comment_msg)
-
-        try:
             upload_to_pr(
                 discussion.repo_id,
                 local_path=[str(dest)],
@@ -170,7 +156,21 @@ def add_annotations(discussion : Discussion, *args):
             status_comment_msg += f"\n \n **ERROR**: Failed to upload annotations / test results. Error message: `{e}`."
             update_comment(discussion, status_comment.id, status_comment_msg)
             return
-   
+
+        try:
+            stats_files = run_update_descriptive_statistics(discussion.repo_id)
+            status_comment_msg += "\n \n **INFO**: Descriptive statistics updated."
+            update_comment(discussion,status_comment.id,status_comment_msg)
+            upload_to_pr(
+                discussion.repo_id,
+                local_path=[str(f) for f in stats_files],
+                pr_num=discussion.num,
+                commit_message=f"Add descriptive statistics for {dataset_name}"
+            )
+        except Exception as e:
+            status_comment_msg += f"\n \n **ERROR**: Failed to update descriptive statistics. You may need to update them manually. Error: {e}"
+            update_comment(discussion,status_comment.id,status_comment_msg)
+
     except Exception as err:
         print(f"Annotation failed: {err}")
         if 'status_comment' in locals(): # if status_comment was created before the Exception happened, update it
