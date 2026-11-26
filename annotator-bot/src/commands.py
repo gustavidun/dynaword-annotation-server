@@ -207,7 +207,7 @@ def run_tests_command(discussion: Discussion, *args):
             pr_num=discussion.num,
             commit_message="Add test results",
         )
-    except Exception:
+    except Exception as e:
         status_comment_msg += f"\n \n **ERROR**: Failed to upload test results. Error message: `{e}`."
         update_comment(discussion, status_comment.id, status_comment_msg)
         return
